@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Progress Bar</title>
+	<style>
+		body {
+			background-color: #F9F9F9;
+			font-size: 2em;
+			font-weight: bold;
+			text-align: center;
+			margin-top: 25vh;
+			color: #323232;
+		}
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .options label {
+            margin: 0 10px;
+        }
+
+        .options input[type="radio"] {
+            display: none;
+        }
+
+        .options input[type="radio"] + label {
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            color: #333;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .options input[type="radio"]:checked + label {
+            background-color: #1abc9c;
+            color: #fff;
+        }
+		
+		.chord-text {
+			font-size: 6em;
+			font-weight: bold;
+			margin-top: 50px;
+			margin-bottom: 20px;
+		}
+		
+		.progress {
+			width: 500px;
+			height: 20px;
+			background-color: #e6e6e6;
+			border-radius: 10px;
+			margin: 50px auto;
+		}
+		
+		.progressBar {
+			height: 100%;
+			background-color: #1abc9c;
+			border-radius: 10px;
+			animation: progress linear infinite;
+			animation-duration: 1s;
+			animation-play-state: paused;
+		}
+
+		@keyframes progress {
+			from { width: 0; }
+			to { width: 100%; }
+		}
+
+		@keyframes reset-progress {
+			from { width: 100%; }
+			to { width: 0; }
+		}
+
+		.progressBar.reset {
+			animation: reset-progress 0.5s;
+		}
+
+        .changeRate {
+            margin-top: 5px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+			padding: 10px 20px;
+			background-color: #1abc9c;
+			color: #fff;
+			border: none;
+			border-radius: 5px;
+			font-size: 16px;
+			cursor: pointer;
+			margin: 10px;
+		}
+	</style>
+</head>
+<body>
+    <div class="options">
+        <label for="option-a">A</label>
+        <input type="checkbox" name="chords" id="option-a" value="A" checked>
+        <label for="option-am">AM</label>
+        <input type="checkbox" name="chords" id="option-am" value="AM">
+        <label for="option-c">C</label>
+        <input type="checkbox" name="chords" id="option-c" value="C">
+        <label for="option-d">D</label>
+        <input type="checkbox" name="chords" id="option-d" value="D">
+        <label for="option-dm">Dm</label>
+        <input type="checkbox" name="chords" id="option-dm" value="Dm">
+        <label for="option-e">E</label>
+        <input type="checkbox" name="chords" id="option-e" value="E">
+        <label for="option-em">Em</label>
+        <input type="checkbox" name="chords" id="option-em" value="Em">
+        <label for="option-all">All</label>
+        <input type="checkbox" name="chords" id="option-all" value="All">
+    </div>
+    <div>
+        <p class="chord-text" id="chord-text"></p>
+    </div>
+	<div class="progress">
+		<div class="progressBar"></div>
+	</div>
+    <div>
+        <select class="changeRate" id="changeRate">
+            <option value="1" selected>1s</option>
+            <option value="2">2s</option>
+            <option value="3">3s</option>
+            <option value="4">4s</option>
+            <option value="5">5s</option>
+        </select>
+    </div>
+    <div>
+        <button id="startButton" class="btn">Start</button>
+        <button id="stopButton" class="btn">Stop</button>
+    </div>
+
+	<audio id="clickSound" src="click.mp3" preload="auto"></audio>
+	
+	<script>
+        const checkedCheckboxes = document.querySelectorAll('input[name="chords"]');
+		const allCheckBox = checkedCheckboxes[checkedCheckboxes.length - 1];
+        const chordText = document.getElementById('chord-text');
+		const progressBar = document.querySelector('.progressBar');
+		const changeRate = document.getElementById('changeRate');
+		const startButton = document.getElementById('startButton');
+		const stopButton = document.getElementById('stopButton');
+		const audio = document.getElementById("clickSound");
+
+		// initialize
+		actionOnAllCheckBoxes(false);
+		chordText.textContent = 'Hello';
+		progressBar.style.width = '0%';
+		let currentChordIndex;
+		let intervalId;
+		let duration = parseInt(changeRate.value) * 1000;
+
+		// helper functions
+		function actionOnAllCheckBoxes(trueOrFalse) {
+			checkedCheckboxes.forEach((checkbox) => {
+				checkbox.checked = trueOrFalse;
+			});
+		}
+
+		function getPracticeChords() {
+			const checkedOptions = [];
+
+			// omit 'All'
+			for (let i = 0; i < checkedCheckboxes.length - 1; i++) {
+				let checkBox = checkedCheckboxes[i];
+
+				if (checkBox.checked) {
+					checkedOptions.push(checkBox.value);
+				}
+			}
+
+			return checkedOptions;
+		}
+
+		function getRandomChord() {
+			let practiceChords = getPracticeChords()
+			let index;
+
+			do {
+				index = Math.floor(Math.random() * practiceChords.length);
+			} while (index == currentChordIndex)
+			currentChordIndex = index;
+
+			return practiceChords[index];
+		}
+
+		function intervalHelper() {
+			clearInterval(intervalId);
+			intervalId = setInterval(() => {
+				chordText.textContent = getRandomChord();
+				audio.play();
+				progressBar.style.animationDuration = duration / 1000 + 's';
+			}, duration);
+		}
+
+		function start() {
+			if (progressBar.classList.contains('reset')) {
+				progressBar.classList.remove('reset');
+			}
+
+			chordText.textContent = getRandomChord();
+			
+			progressBar.style.animationDuration = duration / 1000 + 's';
+			progressBar.style.animationPlayState = 'running';
+
+			intervalHelper();
+		}
+
+		function reset() {
+			clearInterval(intervalId);
+			progressBar.classList.add('reset');
+			progressBar.style.animationPlayState = 'paused';
+		}
+
+		function blockExecution(seconds) {
+			const start = new Date().getTime();
+			while (new Date().getTime() - start < seconds * 1000) {}
+		}
+
+		// 'All' checkbox listener
+		allCheckBox.addEventListener('click', () => {
+			if (allCheckBox.checked) {
+				actionOnAllCheckBoxes(true);
+			} else {
+				actionOnAllCheckBoxes(false);
+			}
+		});
+		
+		// changeRate dropdown listener
+		changeRate.addEventListener('change', () => {
+			reset();
+			blockExecution(1);
+			duration = parseInt(changeRate.value) * 1000;
+			start();
+		});
+		
+		// start button listener
+		startButton.addEventListener('click', () => {
+			start();
+		});
+		
+		// stop button listener
+		stopButton.addEventListener('click', () => {
+			reset();
+		});
+		
+		// space key listener
+		document.addEventListener('keydown', (event) => {
+			console.log('i am here');
+			if (event.code === 'Space') {
+				if (progressBar.style.animationPlayState === 'running') {
+					reset();
+					return;
+				}
+
+				if (progressBar.style.animationPlayState === 'paused') {
+					start();
+					return;
+				}
+			}
+		});
+	</script>
+</body>
+</html>
